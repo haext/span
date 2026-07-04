@@ -1,175 +1,697 @@
 {
   "config": {
     "abort": {
-      "no_devices_found": "Aucun appareil trouvé sur le réseau",
       "already_configured": "Span Panel déjà configuré. Une seule configuration est possible.",
-      "reauth_successful": "Authentification réussie."
+      "cannot_connect": "Échec de la connexion au Span Panel",
+      "no_devices_found": "Aucun appareil trouvé sur le réseau",
+      "no_host": "Aucune adresse d'hôte n'a été fournie par le module complémentaire.",
+      "no_serial": "Impossible de déterminer le numéro de série du panneau.",
+      "reauth_successful": "Authentification réussie.",
+      "reconfigure_successful": "Adresse de l'hôte mise à jour avec succès.",
+      "unique_id_mismatch": "Le panneau à cette adresse a un numéro de série différent. Vous ne pouvez pas passer à un panneau différent lors de la reconfiguration.",
+      "v1_not_supported": "Le micrologiciel v1 n'est pas pris en charge. Veuillez mettre à jour le micrologiciel de votre panneau vers la version v2."
     },
     "error": {
       "cannot_connect": "Échec de la connexion au Span Panel",
+      "fqdn_registration_failed": "Impossible d'enregistrer le nom de domaine auprès du panneau ou le certificat TLS n'a pas été mis à jour à temps.",
+      "host_required": "L'hôte est requis",
       "invalid_auth": "Authentification invalide",
-      "unknown": "Erreur inattendue",
-      "host_required": "L'hôte est requis pour les connexions de panneau en direct"
+      "proximity_failed": "Proximité non prouvée. Veuillez ouvrir et fermer la porte du panneau 3 fois et réessayer.",
+      "unknown": "Erreur inattendue"
     },
     "flow_title": "Span Panel ({host})",
+    "progress": {
+      "registering_fqdn": "Enregistrement du nom de domaine auprès du panneau et attente de la mise à jour du certificat TLS. Cela peut prendre jusqu'à 60 secondes..."
+    },
     "step": {
+      "auth_passphrase": {
+        "data": {
+          "hop_passphrase": "Mot de passe"
+        },
+        "data_description": {
+          "hop_passphrase": "Le mot de passe utilisé pour s'authentifier avec l'API v2 du SPAN Panel"
+        },
+        "description": "Entrez le mot de passe de votre SPAN Panel. Il est imprimé sur l'étiquette du panneau ou défini par le propriétaire du panneau.",
+        "title": "Mot de passe du panneau"
+      },
+      "auth_proximity": {
+        "description": "Ouvrez et fermez la porte du SPAN Panel 3 fois, puis sélectionnez la confirmation ci-dessous.",
+        "menu_options": {
+          "auth_passphrase": "Utiliser le mot de passe à la place",
+          "auth_proximity_confirm": "J'ai ouvert et fermé la porte"
+        },
+        "title": "Authentification de proximité"
+      },
+      "auth_proximity_confirm": {
+        "description": "Vérification de la proximité avec le panneau.",
+        "title": "Authentification de proximité"
+      },
+      "choose_entity_naming_initial": {
+        "data": {
+          "entity_naming_pattern": "Modèle de nommage"
+        },
+        "data_description": {
+          "entity_naming_pattern": "Les noms conviviaux utilisent les étiquettes de circuit du panneau. Les noms basés sur les onglets utilisent les numéros d'onglets de disjoncteur pour des identifiants d'entité stables."
+        },
+        "description": "Choisissez comment les entités liées aux circuits sont nommées dans Home Assistant.",
+        "title": "Nommage des entités de circuit"
+      },
+      "choose_v2_auth": {
+        "menu_options": {
+          "auth_passphrase": "Entrer le mot de passe du panneau",
+          "auth_proximity": "Preuve de proximité (ouvrir/fermer la porte)"
+        },
+        "title": "Choisir la méthode d'authentification"
+      },
       "confirm_discovery": {
         "description": "Voulez-vous configurer Span Panel sur {host} ?",
         "title": "Connectez-vous au Span Panel"
       },
+      "fqdn_failed": {
+        "description": "Le nom de domaine n'a pas pu être enregistré auprès du panneau, ou le certificat TLS n'a pas été mis à jour à temps. Vous pouvez continuer, mais la connexion MQTT peut échouer si le certificat du panneau n'inclut pas votre nom de domaine.",
+        "title": "Enregistrement du domaine"
+      },
+      "reauth_confirm": {
+        "description": "Le Span Panel à {host} nécessite une ré-authentification.",
+        "menu_options": {
+          "auth_passphrase": "Entrer le mot de passe du panneau",
+          "auth_proximity": "Preuve de proximité (ouvrir/fermer la porte)"
+        },
+        "title": "Ré-authentifier le Span Panel"
+      },
+      "reconfigure": {
+        "data": {
+          "host": "Hôte"
+        },
+        "data_description": {
+          "host": "Adresse IP ou nom d'hôte du SPAN Panel"
+        },
+        "description": "Mettez à jour l'adresse de l'hôte pour ce SPAN Panel. Le numéro de série du panneau doit correspondre.",
+        "title": "Reconfigurer le SPAN Panel"
+      },
+      "reconfigure_fqdn_done": {
+        "title": "Reconfiguration terminée"
+      },
+      "reconfigure_fqdn_failed": {
+        "description": "Le nom de domaine n'a pas pu être enregistré auprès du panneau, ou le certificat TLS n'a pas été mis à jour à temps. Vous pouvez continuer, mais la connexion MQTT peut échouer si le certificat du panneau n'inclut pas votre nom de domaine.",
+        "title": "Enregistrement du domaine"
+      },
+      "reconfigure_register_fqdn": {
+        "title": "Enregistrement du nom de domaine"
+      },
+      "register_fqdn": {
+        "title": "Enregistrement du nom de domaine"
+      },
       "user": {
         "data": {
-          "host": "Host",
-          "use_ssl": "Utiliser SSL",
-          "simulator_mode": "Mode Simulateur",
-          "power_display_precision": "Précision d'Affichage de Puissance",
-          "energy_display_precision": "Précision d'Affichage d'Énergie"
+          "enable_energy_dip_compensation": "Compenser les Baisses d'Énergie Automatiquement",
+          "energy_display_precision": "Précision d'Affichage d'Énergie",
+          "host": "Hôte",
+          "http_port": "Port HTTP",
+          "power_display_precision": "Précision d'Affichage de Puissance"
         },
         "data_description": {
-          "host": "Adresse IP ou nom d'hôte du SPAN Panel (pour la simulation : utilisez un numéro de série comme 'sp3-simulation-001' ou laissez vide pour la valeur par défaut)",
-          "use_ssl": "Activer la connexion HTTPS sécurisée au SPAN Panel",
-          "simulator_mode": "Activer le mode simulateur pour les tests (aucun matériel requis). Laissez l'hôte vide pour la simulation par défaut, ou entrez un numéro de série personnalisé.",
-          "power_display_precision": "Nombre de décimales pour les valeurs de puissance (0-3)",
-          "energy_display_precision": "Nombre de décimales pour les valeurs d'énergie (0-3)"
+          "enable_energy_dip_compensation": "Compenser automatiquement lorsque le panneau signale des lectures d'énergie inférieures, évitant les pics dans le tableau de bord énergétique.",
+          "energy_display_precision": "Nombre de décimales pour les valeurs d'énergie (0-3)",
+          "host": "Adresse IP ou nom d'hôte du SPAN Panel",
+          "http_port": "Port HTTP pour l'API du panneau (par défaut : 80)",
+          "power_display_precision": "Nombre de décimales pour les valeurs de puissance (0-3)"
         },
-        "description": "Entrez les détails de connexion pour votre SPAN Panel. Pour le mode simulateur, cochez la case simulateur et entrez optionnellement un numéro de série personnalisé.",
+        "description": "Entrez les détails de connexion pour votre SPAN Panel.",
         "title": "Connectez-vous au Span Panel"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "bess_connected": {
+        "name": "BESS Connecté"
       },
-      "choose_auth_type": {
-        "title": "Choisir les options d'authentification",
-        "menu_options": {
-          "auth_proximity": "Authentifiez-vous via votre Span Panel physique",
-          "auth_token": "Authentifier à l'aide d'un jeton d'accès"
+      "door_state": {
+        "name": "État de la Porte"
+      },
+      "ethernet_link": {
+        "name": "Liaison Ethernet"
+      },
+      "evse_charging": {
+        "name": "En charge"
+      },
+      "evse_ev_connected": {
+        "name": "VE Connecté"
+      },
+      "grid_islandable": {
+        "name": "Îlotage Réseau Possible"
+      },
+      "panel_status": {
+        "name": "État du Panneau"
+      },
+      "wifi_link": {
+        "name": "Liaison Wi-Fi"
+      }
+    },
+    "button": {
+      "gfe_override": {
+        "name": "Forçage GFE : Connecté au Réseau"
+      }
+    },
+    "select": {
+      "circuit_priority": {
+        "name": "Priorité du Circuit",
+        "state": {
+          "never": "Reste allumé en cas de panne",
+          "off_grid": "S'éteint en cas de panne",
+          "soc_threshold": "Reste allumé jusqu'au seuil de batterie"
+        }
+      }
+    },
+    "sensor": {
+      "battery_level": {
+        "name": "Niveau de Batterie"
+      },
+      "battery_power": {
+        "name": "Puissance de la Batterie"
+      },
+      "bess_firmware_version": {
+        "name": "Version du Micrologiciel"
+      },
+      "bess_model": {
+        "name": "Modèle"
+      },
+      "bess_nameplate_capacity": {
+        "name": "Capacité Nominale"
+      },
+      "bess_serial_number": {
+        "name": "Numéro de Série"
+      },
+      "bess_soe_kwh": {
+        "name": "État d'Énergie"
+      },
+      "bess_vendor": {
+        "name": "Fournisseur"
+      },
+      "current_run_config": {
+        "name": "Configuration Active",
+        "state": {
+          "panel_backup": "Secours",
+          "panel_off_grid": "Hors Réseau",
+          "panel_on_grid": "Sur Réseau",
+          "unknown": "Inconnu"
         }
       },
-      "auth_proximity": {
-        "title": "Authentification de proximité",
-        "description": "Veuillez ouvrir et fermer la porte du Span Panel les fois {remaining}."
+      "downstream_l1_current": {
+        "name": "Courant Aval L1"
       },
-      "auth_token": {
-        "title": "Authentification manuelle du jeton",
-        "description": "Vieuillez entrer votre jeton d'accès (laissez vide pour recommencer):",
-        "data": {
-          "access_token": "Jeton d'accès"
+      "downstream_l2_current": {
+        "name": "Courant Aval L2"
+      },
+      "dsm_grid_state": {
+        "name": "État Réseau DSM",
+        "state": {
+          "dsm_off_grid": "Hors Réseau",
+          "dsm_on_grid": "Sur Réseau",
+          "unknown": "Inconnu"
         }
       },
-      "simulator_config": {
-        "title": "Configuration du Simulateur",
-        "description": "Sélectionnez une configuration de simulation et définissez optionnellement un heure de début personnalisée. {config_count} configurations disponibles.",
-        "data": {
-          "simulation_config": "Configuration de Simulation",
-          "host": "Host (Numéro de Série)",
-          "simulation_start_time": "Heure de Début de Simulation (Optionnel)",
-          "entity_naming_pattern": "Modèle de Nommage des Entités"
-        },
-        "data_description": {
-          "simulation_config": "Choisissez une configuration de simulation qui définit les modèles de circuit et les profils d'énergie",
-          "host": "Numéro de série personnalisé pour le panneau simulé (optionnel, utilisera la valeur par défaut de la configuration si vide)",
-          "simulation_start_time": "Format d'heure : HH:MM (24h), H:MM (12h), ou datetime ISO complet (YYYY-MM-DDTHH:MM:SS). Laissez vide pour utiliser l'heure actuelle.",
-          "entity_naming_pattern": "Choisissez comment les entités de circuit sont nommées dans la simulation"
+      "dsm_state": {
+        "name": "État DSM",
+        "state": {
+          "dsm_off_grid": "Hors Réseau",
+          "dsm_on_grid": "Sur Réseau",
+          "unknown": "Inconnu"
+        }
+      },
+      "evse_advertised_current": {
+        "name": "Courant Annoncé"
+      },
+      "evse_lock_state": {
+        "name": "État du Verrouillage",
+        "state": {
+          "locked": "Verrouillé",
+          "unknown": "Inconnu",
+          "unlocked": "Déverrouillé"
+        }
+      },
+      "evse_status": {
+        "name": "État du Chargeur",
+        "state": {
+          "available": "Disponible",
+          "charging": "En charge",
+          "faulted": "En défaut",
+          "finishing": "Finalisation",
+          "preparing": "En préparation",
+          "reserved": "Réservé",
+          "suspended_ev": "Suspendu par le Véhicule",
+          "suspended_evse": "Suspendu par le Chargeur",
+          "unavailable": "Indisponible",
+          "unknown": "Inconnu"
+        }
+      },
+      "feedthrough_consumed_energy": {
+        "name": "Énergie Consommée en Dérivation"
+      },
+      "feedthrough_net_energy": {
+        "name": "Énergie Nette en Dérivation"
+      },
+      "feedthrough_power": {
+        "name": "Puissance en Dérivation"
+      },
+      "feedthrough_produced_energy": {
+        "name": "Énergie Produite en Dérivation"
+      },
+      "grid_forming_entity": {
+        "name": "Entité Formatrice du Réseau",
+        "state": {
+          "battery": "Batterie",
+          "generator": "Générateur",
+          "grid": "Réseau",
+          "none": "Aucun",
+          "pv": "PV",
+          "unknown": "Inconnu"
+        }
+      },
+      "grid_power_flow": {
+        "name": "Puissance du Réseau"
+      },
+      "instant_grid_power": {
+        "name": "Puissance Actuelle"
+      },
+      "l1_voltage": {
+        "name": "Tension L1"
+      },
+      "l2_voltage": {
+        "name": "Tension L2"
+      },
+      "main_breaker_rating": {
+        "name": "Calibre du Disjoncteur Principal"
+      },
+      "main_meter_consumed_energy": {
+        "name": "Énergie Consommée du Compteur Principal"
+      },
+      "main_meter_net_energy": {
+        "name": "Énergie Nette du Compteur Principal"
+      },
+      "main_meter_produced_energy": {
+        "name": "Énergie Produite du Compteur Principal"
+      },
+      "main_relay_state": {
+        "name": "État du Relais Principal",
+        "state": {
+          "closed": "Fermé",
+          "open": "Ouvert",
+          "unknown": "Inconnu"
+        }
+      },
+      "pv_nameplate_capacity": {
+        "name": "Capacité Nominale PV"
+      },
+      "pv_power": {
+        "name": "Puissance PV"
+      },
+      "pv_product": {
+        "name": "Produit PV"
+      },
+      "pv_vendor": {
+        "name": "Fournisseur PV"
+      },
+      "site_power": {
+        "name": "Puissance du Site"
+      },
+      "software_version": {
+        "name": "Version du Logiciel"
+      },
+      "upstream_l1_current": {
+        "name": "Courant Amont L1"
+      },
+      "upstream_l2_current": {
+        "name": "Courant Amont L2"
+      },
+      "vendor_cloud": {
+        "name": "Cloud du Fournisseur",
+        "state": {
+          "connected": "Connecté",
+          "unconnected": "Déconnecté",
+          "unknown": "Inconnu"
         }
       }
     }
   },
-  "options": {
-    "error": {
-      "directory": "Le chemin du fichier est requis",
-      "base": "Échec de l'exportation : {error}"
+  "exceptions": {
+    "circuit_priority_failed": {
+      "message": "Échec de la définition de la priorité du circuit pour {circuit}."
     },
+    "circuit_relay_failed": {
+      "message": "Échec de la définition de l'état du relais du circuit pour {circuit}."
+    },
+    "export_manifest_no_entries": {
+      "message": "Aucune entrée de configuration SPAN Panel n'est chargée. Ajoutez et configurez un panneau SPAN avant d'appeler ce service."
+    },
+    "favorite_no_circuit_uuid": {
+      "message": "Impossible de dériver une cible favorite à partir de l'entité {entity_id}. Sélectionnez un capteur de circuit (courant/puissance) ou un capteur de sous-appareil."
+    },
+    "favorite_no_device": {
+      "message": "L'entité {entity_id} n'est associée à aucun appareil. Sélectionnez un capteur de circuit ou de sous-appareil SPAN."
+    },
+    "favorite_no_unique_id": {
+      "message": "L'entité {entity_id} n'a pas d'identifiant unique et ne peut pas être résolue vers une cible SPAN."
+    },
+    "favorite_not_span_entity": {
+      "message": "L'entité {entity_id} n'est pas une entité SPAN Panel. Sélectionnez un capteur de circuit, de batterie (BESS) ou de chargeur EV (EVSE)."
+    },
+    "favorite_subdevice_no_span_parent": {
+      "message": "Le sous-appareil {entity_id} n'a pas de panneau SPAN parent — son via_device_id ne pointe pas vers un panneau SPAN."
+    },
+    "gfe_override_failed": {
+      "message": "Échec de l'envoi du forçage GFE au panneau."
+    },
+    "graph_horizon_not_available": {
+      "message": "Le gestionnaire d'horizon de graphique n'est pas disponible pour le panneau SPAN sélectionné."
+    },
+    "monitoring_not_enabled": {
+      "message": "Aucun panneau SPAN n'a la surveillance de courant activée."
+    },
+    "panel_auth_failed": {
+      "message": "L'authentification avec le SPAN Panel a échoué. Veuillez vous réauthentifier."
+    },
+    "panel_connection_failed": {
+      "message": "Échec de la connexion au SPAN Panel à {host}."
+    },
+    "panel_not_ready": {
+      "message": "Le SPAN Panel n'est pas prêt. Veuillez vérifier que le panneau est en ligne."
+    }
+  },
+  "options": {
     "step": {
       "init": {
-        "title": "Menu des Options",
-        "menu_options": {
-          "general_options": "Options Générales",
-          "entity_naming_options": "Options de Nommage des Entités",
-          "entity_naming": "Modèle de Nommage des Entités",
-          "export_config": "Exporter la Configuration des Capteurs Synthétiques",
-          "simulation_start_time": "Heure de Début de Simulation",
-          "simulation_offline_minutes": "Minutes Hors Ligne de Simulation"
-        }
-      },
-      "general_options": {
-        "title": "Options Générales",
         "data": {
-          "scan_interval": "Intervalle d'analyse en secondes",
-          "enable_battery_percentage": "Activer le Capteur de Pourcentage de Batterie",
-          "enable_solar_circuit": "Activer les capteurs de l'onduleur solaire",
-          "leg1": "Jambe solaire 1",
-          "leg2": "Jambe solaire 2",
-          "api_retries": "Tentatives API (0-10)",
-          "api_retry_timeout": "Délai de tentative API (secondes)",
-          "api_retry_backoff_multiplier": "Multiplicateur de délai de tentative API",
-          "energy_reporting_grace_period": "Période de grâce du capteur d'énergie (minutes)",
-          "legacy_upgrade_to_friendly": "Add Device Name Prefix to Entity ID's",
-          "enable_panel_net_energy_sensors": "Énergie Nette du Panneau",
+          "show_panel": "Afficher le Panneau dans la Barre Latérale",
+          "panel_admin_only": "Utilisateurs Administrateurs Uniquement",
           "enable_circuit_net_energy_sensors": "Énergie Nette du Circuit",
-          "enable_solar_net_energy_sensors": "Énergie Nette Solaire"
+          "enable_energy_dip_compensation": "Compenser les Baisses d'Énergie Automatiquement",
+          "enable_panel_net_energy_sensors": "Énergie Nette du Panneau",
+          "enable_unmapped_circuit_sensors": "Capteurs de Circuits Non Assignés",
+          "energy_reporting_grace_period": "Période de grâce du capteur d'énergie (minutes)",
+          "snapshot_update_interval": "Intervalle de Mise à Jour du Snapshot (secondes)"
         },
         "data_description": {
-          "enable_solar_circuit": "Activer les capteurs synthétiques pour la surveillance de l'onduleur solaire. Nécessite la sélection de deux onglets non mappés sur des phases électriques opposées.",
-          "energy_reporting_grace_period": "Combien de temps les capteurs d'énergie maintiennent leur dernière valeur connue lorsque le panneau devient indisponible (0-60 minutes). Aide à préserver l'intégrité des statistiques d'énergie pendant les pannes brèves. Par défaut : 15 minutes.",
-          "legacy_upgrade_to_friendly": "Warning: This irreversible operation will change your circuit entity IDs allowing support for more than one panel",
-          "enable_panel_net_energy_sensors": "Créer des capteurs d'énergie nette pour les flux d'énergie au niveau du panneau (compteur principal et dérivation). Affiche le vrai bilan énergétique en tenant compte des flux bidirectionnels.",
-          "enable_circuit_net_energy_sensors": "Créer des capteurs d'énergie nette pour les circuits individuels. Affiche la vraie consommation d'énergie en tenant compte de la puissance réactive et des flux régénératifs.",
-          "enable_solar_net_energy_sensors": "Créer des capteurs d'énergie nette pour la génération solaire. Affiche la production solaire nette en tenant compte de toute consommation sur les circuits solaires."
-        }
-      },
-      "entity_naming_options": {
-        "title": "Options de Nommage des Entités",
-        "description": "Configurez comment les IDs d'entité sont nommés. Choisissez entre des noms conviviaux (ex., kitchen_outlets_power) ou des numéros d'onglets de circuit (ex., circuit_15_power).",
-        "data": {
-          "legacy_upgrade_to_friendly": "Mettre à niveau l'Installation Legacy vers les Noms Conviviaux",
-          "entity_naming_pattern": "Modèle de Nommage des Entités"
+          "show_panel": "Afficher le tableau de bord du panneau SPAN comme entrée de barre latérale.",
+          "panel_admin_only": "Restreindre l'entrée de la barre latérale du tableau de bord aux utilisateurs administrateurs.",
+          "enable_circuit_net_energy_sensors": "Énergie nette par circuit, tenant compte de la puissance réactive.",
+          "enable_energy_dip_compensation": "Compenser lorsque le panneau signale des lectures d'énergie inférieures. La désactivation efface les compensations.",
+          "enable_panel_net_energy_sensors": "Énergie nette pour le compteur principal et la dérivation, tenant compte des flux bidirectionnels.",
+          "enable_unmapped_circuit_sensors": "Capteurs sous-jacents pour les onglets non assignés à des disjoncteurs nommés.",
+          "energy_reporting_grace_period": "Minutes pendant lesquelles les capteurs conservent leur dernière valeur lorsque le panneau est hors ligne (0–60). Par défaut : 15.",
+          "snapshot_update_interval": "Secondes entre les reconstructions de snapshot (0–15). Plus bas = plus rapide, plus de CPU. 0 = pas de temporisation."
         },
-        "data_description": {
-          "legacy_upgrade_to_friendly": "Mettre à niveau cette installation legacy pour utiliser des noms d'entité conviviaux avec préfixe de dispositif. Cela renommera toutes les entités existantes.",
-          "entity_naming_pattern": "Choisissez comment les IDs d'entité sont construits. Les noms conviviaux utilisent les noms de circuit (ex., kitchen_outlets_power), tandis que les numéros de circuit utilisent les positions d'onglet (ex., circuit_15_power)."
-        }
-      },
-      "entity_naming": {
-        "title": "Modèle de Nommage des Entités",
-        "description": "Choisissez comment les entités de circuit sont nommées. **Changer ceci renommera vos entités existantes.**\n\n{friendly_example}\n\n{circuit_example}\n\n⚠️ **Important**: \n• L'historique des entités sera préservé pendant le renommage\n• Considérez sauvegarder votre configuration avant de procéder\n• Les automatisations et scripts peuvent nécessiter des mises à jour manuelles pour utiliser les nouveaux IDs d'entité",
-        "data": {
-          "entity_naming_pattern": "Modèle de Nommage des Entités"
-        }
-      },
-      "export_config": {
-        "title": "Exporter la Configuration des Capteurs Synthétiques",
-        "description": "Exporter la configuration actuelle des capteurs synthétiques vers un fichier YAML. Vous pouvez spécifier un répertoire (le fichier sera nommé automatiquement) ou un chemin de fichier complet. Nom de fichier par défaut : {filename}",
-        "data": {
-          "directory": "Chemin du Fichier"
-        },
-        "data_description": {
-          "directory": "Un chemin de répertoire (le fichier sera nommé automatiquement) ou un chemin de fichier complet se terminant par .yaml où la configuration sera sauvegardée."
-        }
-      },
-      "simulation_start_time": {
-        "title": "Heure de Début de Simulation",
-        "description": "Configurer l'heure de début de simulation. Les modifications de l'heure de simulation rechargeront l'intégration pour appliquer la nouvelle heure.",
-        "data": {
-          "simulation_start_time": "Heure de Début de Simulation"
-        },
-        "data_description": {
-          "simulation_start_time": "Format d'heure : HH:MM (24h), H:MM (12h), ou datetime ISO complet (YYYY-MM-DDTHH:MM:SS). Laissez vide pour utiliser l'heure actuelle. L'intégration se rechargera pour appliquer les changements."
-        }
-      },
-      "simulation_offline_minutes": {
-        "title": "Minutes Hors Ligne de Simulation",
-        "description": "Configurer combien de temps le panneau doit apparaître hors ligne pendant la simulation.",
-        "data": {
-          "simulation_offline_minutes": "Minutes Hors Ligne"
-        },
-        "data_description": {
-          "simulation_offline_minutes": "Nombre de minutes pendant lesquelles le panneau doit apparaître hors ligne pendant la simulation. Définissez sur 0 pour désactiver la simulation hors ligne."
-        }
+        "description": "Configurer les paramètres de l'intégration SPAN Panel.",
+        "title": "Options du panneau SPAN"
       }
     }
   },
   "selector": {
     "entity_naming_pattern": {
       "options": {
-        "friendly_names": "Noms Conviviaux (ex., span_panel_cuisine_prises_power)",
-        "circuit_numbers": "Numéros de Circuit (ex., span_panel_circuit_15_power)"
+        "circuit_numbers": "Numéros de Circuit (ex., span_panel_circuit_15_power)",
+        "friendly_names": "Noms Conviviaux (ex., span_panel_cuisine_prises_power)"
+      }
+    }
+  },
+  "services": {
+    "export_circuit_manifest": {
+      "description": "Retourne un manifeste structuré des circuits pour tous les panneaux SPAN configurés : numéro de série, hôte, identifiants d'entité des capteurs de puissance par circuit, identifiants de modèle de disposition (clone_{{tab}}), types d'appareils et numéros d'onglets de disjoncteur. Destiné aux cartes de tableau de bord et aux automatisations nécessitant la topologie du panneau sans interroger le registre d'entités. Il s'agit d'un service en réponse seule ; la réponse peut lister zéro panneau si rien ne peut être résolu.",
+      "name": "Exporter le manifeste des circuits"
+    },
+    "set_circuit_threshold": {
+      "name": "Définir le seuil du circuit",
+      "description": "Définir les seuils de surveillance du courant pour un circuit spécifique.",
+      "fields": {
+        "circuit_id": {
+          "name": "Circuit",
+          "description": "L'entité capteur de puissance du circuit."
+        },
+        "continuous_threshold_pct": {
+          "name": "Seuil continu (%)",
+          "description": "Pourcentage du calibre du disjoncteur pour les alertes de charge continue."
+        },
+        "spike_threshold_pct": {
+          "name": "Seuil de pic (%)",
+          "description": "Pourcentage du calibre du disjoncteur pour les alertes de pic instantané."
+        },
+        "window_duration_m": {
+          "name": "Durée de la fenêtre (minutes)",
+          "description": "Durée pendant laquelle le courant doit rester au-dessus du seuil avant déclenchement de l'alerte."
+        },
+        "cooldown_duration_m": {
+          "name": "Durée de refroidissement (minutes)",
+          "description": "Minutes entre les alertes répétées pour le même circuit."
+        },
+        "monitoring_enabled": {
+          "name": "Surveillance activée",
+          "description": "Activer ou désactiver la surveillance pour ce circuit."
+        },
+        "config_entry_id": {
+          "name": "Entrée de configuration",
+          "description": "Id d'entrée de configuration optionnel. Nécessaire uniquement si plusieurs panneaux SPAN sont configurés."
+        }
+      }
+    },
+    "clear_circuit_threshold": {
+      "name": "Effacer le seuil du circuit",
+      "description": "Supprimer les seuils personnalisés du circuit, revenant aux valeurs par défaut globales.",
+      "fields": {
+        "circuit_id": {
+          "name": "Circuit",
+          "description": "L'entité capteur de puissance du circuit."
+        },
+        "config_entry_id": {
+          "name": "Entrée de configuration",
+          "description": "Id d'entrée de configuration optionnel. Nécessaire uniquement si plusieurs panneaux SPAN sont configurés."
+        }
+      }
+    },
+    "set_mains_threshold": {
+      "name": "Définir le seuil du réseau principal",
+      "description": "Définir les seuils de surveillance du courant pour une phase du réseau principal.",
+      "fields": {
+        "leg": {
+          "name": "Phase du réseau",
+          "description": "L'entité capteur de courant du réseau principal."
+        },
+        "continuous_threshold_pct": {
+          "name": "Seuil continu (%)",
+          "description": "Pourcentage du calibre du disjoncteur pour les alertes de charge continue."
+        },
+        "spike_threshold_pct": {
+          "name": "Seuil de pic (%)",
+          "description": "Pourcentage du calibre du disjoncteur pour les alertes de pic instantané."
+        },
+        "window_duration_m": {
+          "name": "Durée de la fenêtre (minutes)",
+          "description": "Durée pendant laquelle le courant doit rester au-dessus du seuil avant déclenchement de l'alerte."
+        },
+        "cooldown_duration_m": {
+          "name": "Durée de refroidissement (minutes)",
+          "description": "Minutes entre les alertes répétées pour la même phase du réseau."
+        },
+        "monitoring_enabled": {
+          "name": "Surveillance activée",
+          "description": "Activer ou désactiver la surveillance pour cette phase du réseau."
+        },
+        "config_entry_id": {
+          "name": "Entrée de configuration",
+          "description": "Id d'entrée de configuration optionnel. Nécessaire uniquement si plusieurs panneaux SPAN sont configurés."
+        }
+      }
+    },
+    "clear_mains_threshold": {
+      "name": "Effacer le seuil du réseau principal",
+      "description": "Supprimer les seuils personnalisés de la phase du réseau, revenant aux valeurs par défaut globales.",
+      "fields": {
+        "leg": {
+          "name": "Phase du réseau",
+          "description": "L'entité capteur de courant du réseau principal."
+        },
+        "config_entry_id": {
+          "name": "Entrée de configuration",
+          "description": "Id d'entrée de configuration optionnel. Nécessaire uniquement si plusieurs panneaux SPAN sont configurés."
+        }
+      }
+    },
+    "get_monitoring_status": {
+      "name": "Obtenir l'état de surveillance",
+      "description": "Retourne l'état actuel de surveillance pour tous les circuits et phases du réseau suivis.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Entrée de configuration",
+          "description": "Id d'entrée de configuration optionnel. Nécessaire uniquement si plusieurs panneaux SPAN sont configurés."
+        }
+      }
+    },
+    "set_global_monitoring": {
+      "name": "Configurer la surveillance globale",
+      "description": "Mettre à jour les seuils de surveillance globale et les paramètres de notification.",
+      "fields": {
+        "enabled": {
+          "name": "Activé",
+          "description": "Activer ou désactiver la surveillance du courant globalement pour ce panneau SPAN."
+        },
+        "continuous_threshold_pct": {
+          "name": "Seuil continu",
+          "description": "Pourcentage de la capacité du disjoncteur pour la détection de surcharge continue."
+        },
+        "spike_threshold_pct": {
+          "name": "Seuil de pointe",
+          "description": "Pourcentage de la capacité du disjoncteur pour la détection de pointes."
+        },
+        "window_duration_m": {
+          "name": "Durée de la fenêtre",
+          "description": "Minutes de surcharge soutenue avant de déclencher une alerte."
+        },
+        "cooldown_duration_m": {
+          "name": "Durée de refroidissement",
+          "description": "Minutes entre les alertes répétées pour le même point."
+        },
+        "notify_targets": {
+          "name": "Cibles de notification",
+          "description": "Liste séparée par des virgules des cibles de services de notification."
+        },
+        "notification_title_template": {
+          "name": "Modèle de titre de notification",
+          "description": "Modèle pour le titre de la notification. Marqueurs : {name}, {entity_id}, {alert_type}, {current_a}, {breaker_rating_a}, {threshold_pct}, {utilization_pct}, {window_m}."
+        },
+        "notification_message_template": {
+          "name": "Modèle de message de notification",
+          "description": "Modèle pour le corps du message de notification. Marqueurs : {name}, {entity_id}, {alert_type}, {current_a}, {breaker_rating_a}, {threshold_pct}, {utilization_pct}, {window_m}."
+        },
+        "notification_priority": {
+          "name": "Priorité de notification",
+          "description": "Niveau de priorité de la notification push. Contrôle le comportement d'interruption sur les appareils mobiles (iOS : interruption-level, Android : priority/canal)."
+        },
+        "config_entry_id": {
+          "name": "Entrée de configuration",
+          "description": "Id d'entrée de configuration optionnel. Nécessaire uniquement si plusieurs panneaux SPAN sont configurés."
+        }
+      }
+    },
+    "test_notification": {
+      "name": "Notification de test",
+      "description": "Envoyer une notification de test à toutes les cibles configurées avec des valeurs d'exemple.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Entrée de configuration",
+          "description": "Id d'entrée de configuration optionnel. Nécessaire uniquement si plusieurs panneaux SPAN sont configurés."
+        }
+      }
+    },
+    "set_graph_time_horizon": {
+      "name": "Définir l'horizon temporel du graphique",
+      "description": "Définit l'horizon temporel par défaut global pour les graphiques de circuits.",
+      "fields": {
+        "horizon": {
+          "name": "Horizon",
+          "description": "Fenêtre temporelle prédéfinie pour l'affichage du graphique."
+        },
+        "config_entry_id": {
+          "name": "Entrée de configuration",
+          "description": "Id d'entrée de configuration optionnel. Nécessaire uniquement si plusieurs panneaux SPAN sont configurés."
+        }
+      }
+    },
+    "set_circuit_graph_horizon": {
+      "name": "Définir l'horizon de graphique par circuit",
+      "description": "Définit un remplacement d'horizon temporel par circuit pour les graphiques.",
+      "fields": {
+        "circuit_id": {
+          "name": "ID du circuit",
+          "description": "L'identifiant du circuit à remplacer."
+        },
+        "horizon": {
+          "name": "Horizon",
+          "description": "Fenêtre temporelle prédéfinie pour l'affichage du graphique."
+        },
+        "config_entry_id": {
+          "name": "Entrée de configuration",
+          "description": "Id d'entrée de configuration optionnel. Nécessaire uniquement si plusieurs panneaux SPAN sont configurés."
+        }
+      }
+    },
+    "clear_circuit_graph_horizon": {
+      "name": "Effacer l'horizon de graphique du circuit",
+      "description": "Supprime le remplacement d'horizon de graphique par circuit, revenant à la valeur par défaut globale.",
+      "fields": {
+        "circuit_id": {
+          "name": "ID du circuit",
+          "description": "L'identifiant du circuit pour lequel effacer le remplacement."
+        },
+        "config_entry_id": {
+          "name": "Entrée de configuration",
+          "description": "Id d'entrée de configuration optionnel. Nécessaire uniquement si plusieurs panneaux SPAN sont configurés."
+        }
+      }
+    },
+    "set_subdevice_graph_horizon": {
+      "name": "Définir l'horizon de graphique par sous-appareil",
+      "description": "Définit un remplacement d'horizon temporel par sous-appareil pour les graphiques.",
+      "fields": {
+        "subdevice_id": {
+          "name": "ID du sous-appareil",
+          "description": "L'identifiant du sous-appareil à remplacer."
+        },
+        "horizon": {
+          "name": "Horizon",
+          "description": "Fenêtre temporelle prédéfinie pour l'affichage du graphique."
+        },
+        "config_entry_id": {
+          "name": "Entrée de configuration",
+          "description": "Id d'entrée de configuration optionnel. Nécessaire uniquement si plusieurs panneaux SPAN sont configurés."
+        }
+      }
+    },
+    "clear_subdevice_graph_horizon": {
+      "name": "Effacer l'horizon de graphique du sous-appareil",
+      "description": "Supprime le remplacement d'horizon de graphique par sous-appareil, revenant à la valeur par défaut globale.",
+      "fields": {
+        "subdevice_id": {
+          "name": "ID du sous-appareil",
+          "description": "L'identifiant du sous-appareil pour lequel effacer le remplacement."
+        },
+        "config_entry_id": {
+          "name": "Entrée de configuration",
+          "description": "Id d'entrée de configuration optionnel. Nécessaire uniquement si plusieurs panneaux SPAN sont configurés."
+        }
+      }
+    },
+    "get_graph_settings": {
+      "name": "Obtenir les paramètres de graphique",
+      "description": "Retourne les paramètres actuels d'horizon de graphique globaux et par circuit.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Entrée de configuration",
+          "description": "Id d'entrée de configuration optionnel. Nécessaire uniquement si plusieurs panneaux SPAN sont configurés."
+        }
+      }
+    },
+    "get_favorites": {
+      "name": "Obtenir les favoris",
+      "description": "Retourne la carte des favoris inter-panneaux enregistrés pour les circuits et les sous-appareils, indexée par identifiant d'appareil de panneau SPAN."
+    },
+    "add_favorite": {
+      "name": "Ajouter un favori",
+      "description": "Marque un circuit SPAN, une batterie (BESS) ou un chargeur EV (EVSE) comme favori pour qu'il apparaisse dans la vue Favoris du tableau de bord.",
+      "fields": {
+        "entity_id": {
+          "name": "Entité",
+          "description": "N'importe quel capteur du circuit ou du sous-appareil à marquer comme favori (courant, puissance, SoC, etc.)."
+        }
+      }
+    },
+    "remove_favorite": {
+      "name": "Retirer un favori",
+      "description": "Retire un circuit ou un sous-appareil de la vue Favoris inter-panneaux.",
+      "fields": {
+        "entity_id": {
+          "name": "Entité",
+          "description": "N'importe quel capteur du circuit ou du sous-appareil à retirer des favoris."
+        }
       }
     }
   }

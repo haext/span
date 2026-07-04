@@ -1,41 +1,41 @@
-[tool.poetry]
+[project]
 name = "span"
-# integration version is managed in the manifest.json for HA
-# version = "0.0.0"
+version = "2.0.7"
 description = "Span Panel Custom Integration for Home Assistant"
-authors = ["SpanPanel"]
-license = "MIT"
+authors = [{name = "SpanPanel"}]
+license = {text = "MIT"}
 readme = "README.md"
-package-mode = false
+requires-python = ">=3.14.3,<3.15"
+dependencies = [
+    "homeassistant==2026.5.4",
+    "span-panel-api==2.6.4",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.13.2,<3.14"
-homeassistant = "2025.9.3,<2026.0.0"  # Pin to exact version for custom component compatibility
-span-panel-api = {path = "../span-panel-api", develop = true}
+[dependency-groups]
+dev = [
+    "homeassistant-stubs==2026.5.4",
+    "types-requests",
+    "types-PyYAML",
+    "mypy==1.20.2",
+    "pyright==1.1.409",
+    "ruff==0.15.12",
+    "bandit[toml]==1.9.4",
+    "prek>=0.3.11",
+    "voluptuous-stubs",
+    "python-direnv",
+    "prettier",
+    "radon==6.0.1",
+    "pylint==4.0.5",
+    "pytest-homeassistant-custom-component>=0.13.333",
+    "isort",
+    "vulture>=2.14",
+]
 
-[tool.poetry.group.dev.dependencies]
-# Type stubs and dev-only tools that don't conflict with HA runtime
-homeassistant-stubs = "2025.9.3"
-types-requests = "*"
-types-PyYAML = "*"
-mypy = "*"
-pyright = "*"
-ruff = "*"
-bandit = "*"
-pre-commit = "*"
-voluptuous-stubs = "*"
-python-direnv = "*"
-prettier = "*"
-radon = "*"
-pylint = "*"  # For import-outside-toplevel checks
-# Testing dependencies
-pytest = "^8.4.1"  # Compatible with Python 3.13
-pytest-homeassistant-custom-component = "^0.13.280"  # Latest version compatible with HA 2025.8.2
-isort = "*"
+[tool.uv]
+package = false
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.uv.sources]
+span-panel-api = { path = "../span-panel-api", editable = true }
 
 [tool.jscpd]
 path = ["custom_components/span_panel", "./*.{html,md}"]
@@ -111,7 +111,7 @@ exclude = [
     ".git",
     ".pytest_cache",
     ".mypy_cache",
-    ".ruff_cache"
+    ".ruff_cache", "**/node_modules", "**/__pycache__", "**/.*"
 ]
 extraPaths = [
     "./custom_components",
@@ -119,7 +119,7 @@ extraPaths = [
     "../ha-synthetic-sensors/src"
 ]
 pythonPlatform = "Darwin"
-pythonVersion = "3.13"
+pythonVersion = "3.14"
 typeCheckingMode = "basic"
 useLibraryCodeForTypes = true
 autoImportCompletions = true
@@ -130,7 +130,7 @@ venv = ".venv"
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = [

@@ -5,16 +5,35 @@
     "@SpanPanel"
   ],
   "config_flow": true,
-  "documentation": "https://github.com/SpanPanel/span",
-  "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/SpanPanel/span/issues",
-  "requirements": [
-    "span-panel-api~=1.1.13"
+  "dependencies": [
+    "diagnostics",
+    "frontend",
+    "http",
+    "panel_custom",
+    "persistent_notification"
   ],
-  "version": "1.2.6",
+  "documentation": "https://github.com/SpanPanel/span",
+  "integration_type": "device",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/SpanPanel/span/issues",
+  "loggers": [
+    "custom_components.span_panel",
+    "span_panel_api"
+  ],
+  "quality_scale": "gold",
+  "requirements": [
+    "span-panel-api==2.6.4"
+  ],
+  "version": "2.0.8",
   "zeroconf": [
     {
       "type": "_span._tcp.local."
+    },
+    {
+      "type": "_ebus._tcp.local."
+    },
+    {
+      "type": "_secure-mqtt._tcp.local."
     }
   ]
 }

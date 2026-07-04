@@ -1,6 +1,6 @@
 version: 2
 updates:
-  # Python dependencies managed by Poetry
+  # Python dependencies managed by uv
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
@@ -8,6 +8,39 @@ updates:
       day: "monday"
       time: "09:00"
     open-pull-requests-limit: 1
+    allow:
+      - dependency-type: "all"
+    groups:
+      # Home Assistant core, stubs, and test component must upgrade together.
+      # A version mismatch between any of these causes resolution failures.
+      ha-core:
+        patterns:
+          - "homeassistant"
+          - "homeassistant-stubs"
+          - "pytest-homeassistant-custom-component"
+      # Group remaining development dependencies together
+      dev-dependencies:
+        patterns:
+          - "pytest*"
+          - "mypy"
+          - "ruff"
+          - "bandit"
+          - "prek"
+          - "isort"
+          - "pylint"
+          - "radon"
+          - "prettier"
+          - "python-direnv"
+          - "*-cov"
+          - "types-*"
+          - "voluptuous-stubs"
+          - "pyright"
+        exclude-patterns:
+          - "homeassistant"
+          - "homeassistant-stubs"
+          - "pytest-homeassistant-custom-component"
+    reviewers:
+      - "cayossarian"
     assignees:
       - "cayossarian"
     commit-message:
@@ -17,14 +50,8 @@ updates:
       - "dependencies"
       - "python"
     ignore:
-      # Ignore major version updates for Home Assistant to prevent breaking changes
-      - dependency-name: "homeassistant"
-        update-types: ["version-update:semver-major"]
       # Ignore major version updates for span-panel-api since it's a local dependency
       - dependency-name: "span-panel-api"
-        update-types: ["version-update:semver-major"]
-      # Ignore pytest-homeassistant-custom-component major updates to maintain compatibility
-      - dependency-name: "pytest-homeassistant-custom-component"
         update-types: ["version-update:semver-major"]
 
   # GitHub Actions dependencies
@@ -35,6 +62,8 @@ updates:
       day: "monday"
       time: "09:00"
     open-pull-requests-limit: 1
+    reviewers:
+      - "cayossarian"
     assignees:
       - "cayossarian"
     commit-message:

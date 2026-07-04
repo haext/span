@@ -1,49 +1,26 @@
 """Constants for the Span Panel integration."""
 
-from datetime import timedelta
 import enum
 from typing import Final
 
 DOMAIN: Final = "span_panel"
-COORDINATOR = "coordinator"
-NAME = "name"
 
 CONF_SERIAL_NUMBER = "serial_number"
 CONF_USE_SSL = "use_ssl"
 CONF_DEVICE_NAME = "device_name"
 
-# Simulation configuration
-CONF_SIMULATION_CONFIG = "simulation_config"
-CONF_SIMULATION_START_TIME = "simulation_start_time"
-CONF_SIMULATION_OFFLINE_MINUTES = "simulation_offline_minutes"
+# v2 API / MQTT configuration (stored in config entry data)
+CONF_API_VERSION = "api_version"
+CONF_EBUS_BROKER_HOST = "ebus_broker_host"
+CONF_EBUS_BROKER_USERNAME = "ebus_broker_username"
+CONF_EBUS_BROKER_PASSWORD = "ebus_broker_password"  # nosec B105
+CONF_EBUS_BROKER_PORT = "ebus_broker_mqtts_port"
+CONF_HOP_PASSPHRASE = "hop_passphrase"  # nosec B105
+CONF_HTTP_PORT = "http_port"
+CONF_PANEL_SERIAL = "panel_serial"
+CONF_REGISTERED_FQDN = "registered_fqdn"
 
-# Time format constants for simulation
-TIME_ONLY_FORMATS = ["HH:MM", "H:MM"]  # 24-hour and 12-hour formats
-ISO_DATETIME_FORMAT = "YYYY-MM-DDTHH:MM:SS"  # Full ISO datetime format
-
-URL_STATUS = "http://{}/api/v1/status"
-URL_SPACES = "http://{}/api/v1/spaces"
-URL_CIRCUITS = "http://{}/api/v1/circuits"
-URL_PANEL = "http://{}/api/v1/panel"
-URL_REGISTER = "http://{}/api/v1/auth/register"
-URL_STORAGE_BATTERY = "http://{}/api/v1/storage/soe"
-
-STORAGE_BATTERY_PERCENTAGE = "batteryPercentage"
-CIRCUITS_NAME = "name"
-CIRCUITS_RELAY = "relayState"
-CIRCUITS_POWER = "instantPowerW"
-CIRCUITS_ENERGY_PRODUCED = "producedEnergyWh"
-CIRCUITS_ENERGY_CONSUMED = "consumedEnergyWh"
-CIRCUITS_BREAKER_POSITIONS = "tabs"
-CIRCUITS_PRIORITY = "priority"
-CIRCUITS_IS_USER_CONTROLLABLE = "is_user_controllable"
-CIRCUITS_IS_SHEDDABLE = "is_sheddable"
-CIRCUITS_IS_NEVER_BACKUP = "is_never_backup"
-
-SPAN_CIRCUITS = "circuits"
-SPAN_SOE = "soe"
-SPAN_SYSTEM = "system"
-PANEL_POWER = "instantGridPowerW"
+# Binary sensor / status field keys (used in entity definitions)
 SYSTEM_DOOR_STATE = "doorState"
 SYSTEM_DOOR_STATE_CLOSED = "CLOSED"
 SYSTEM_DOOR_STATE_UNKNOWN = "UNKNOWN"
@@ -53,13 +30,6 @@ SYSTEM_CELLULAR_LINK = "wwanLink"
 SYSTEM_WIFI_LINK = "wlanLink"
 PANEL_STATUS = "panel_status"
 
-STATUS_SOFTWARE_VER = "softwareVer"
-DSM_GRID_STATE = "dsmGridState"
-DSM_STATE = "dsmState"
-CURRENT_RUN_CONFIG = "currentRunConfig"
-MAIN_RELAY_STATE = "mainRelayState"
-
-PANEL_MAIN_RELAY_STATE_UNKNOWN_VALUE = "UNKNOWN"
 USE_DEVICE_PREFIX = "use_device_prefix"
 USE_CIRCUIT_NUMBERS = "use_circuit_numbers"
 
@@ -70,8 +40,6 @@ MIGRATION_VERSION = "migration_version"
 
 # SPAN Panel State Constants
 # DSM (Demand Side Management) States
-DSM_GRID_UP = "DSM_GRID_UP"
-DSM_GRID_DOWN = "DSM_GRID_DOWN"
 DSM_ON_GRID = "DSM_ON_GRID"
 DSM_OFF_GRID = "DSM_OFF_GRID"
 
@@ -87,28 +55,48 @@ ENTITY_NAMING_PATTERN = "entity_naming_pattern"
 # Net energy sensor configuration
 ENABLE_PANEL_NET_ENERGY_SENSORS = "enable_panel_net_energy_sensors"
 ENABLE_CIRCUIT_NET_ENERGY_SENSORS = "enable_circuit_net_energy_sensors"
-ENABLE_SOLAR_NET_ENERGY_SENSORS = "enable_solar_net_energy_sensors"
+ENABLE_ENERGY_DIP_COMPENSATION = "enable_energy_dip_compensation"
 
-DEFAULT_SCAN_INTERVAL = timedelta(seconds=15)
-# API timeout and retry configuration
-API_TIMEOUT = 30  # Default timeout for normal operations
-CONFIG_TIMEOUT = 15  # Shorter timeout for config operations to give quick feedback
+# Unmapped circuit sensor configuration
+ENABLE_UNMAPPED_CIRCUIT_SENSORS = "enable_unmapped_circuit_sensors"
 
-# Retry configuration constants
-CONF_API_RETRIES = "api_retries"
-CONF_API_RETRY_TIMEOUT = "api_retry_timeout"
-CONF_API_RETRY_BACKOFF_MULTIPLIER = "api_retry_backoff_multiplier"
+# Current monitoring configuration
+ENABLE_CURRENT_MONITORING = "enable_current_monitoring"
+DEFAULT_CONTINUOUS_THRESHOLD_PCT = 80
+DEFAULT_SPIKE_THRESHOLD_PCT = 100
+DEFAULT_WINDOW_DURATION_M = 15
+DEFAULT_COOLDOWN_DURATION_M = 15
+DEFAULT_NOTIFICATION_TITLE_TEMPLATE = "SPAN: {name} {alert_type}"
+DEFAULT_NOTIFICATION_MESSAGE_TEMPLATE = (
+    "{name} at {current_a}A ({utilization_pct}% of {breaker_rating_a}A rating) at {local_time}"
+)
+DEFAULT_NOTIFICATION_PRIORITY = "default"
+NOTIFICATION_PRIORITIES: Final[tuple[str, ...]] = (
+    "default",
+    "passive",
+    "active",
+    "time-sensitive",
+    "critical",
+)
+EVENT_CURRENT_ALERT = "span_panel_current_alert"
 
-# Default retry settings for normal operations
-DEFAULT_API_RETRIES = 3
-DEFAULT_API_RETRY_TIMEOUT = 0.5
-DEFAULT_API_RETRY_BACKOFF_MULTIPLIER = 2.0
+# Graph time horizon configuration
+VALID_GRAPH_HORIZONS: Final[tuple[str, ...]] = ("5m", "1h", "1d", "1w", "1M")
+DEFAULT_GRAPH_HORIZON = "5m"
 
+# Mains leg identifiers
+MAINS_LEGS: Final[tuple[str, ...]] = (
+    "upstream_l1",
+    "upstream_l2",
+    "downstream_l1",
+    "downstream_l2",
+)
 
-# Config operation settings (no retries for quick feedback)
-CONFIG_API_RETRIES = 0
-CONFIG_API_RETRY_TIMEOUT = 0.5
-CONFIG_API_RETRY_BACKOFF_MULTIPLIER = 2.0
+# Panel sidebar settings (domain-level, shared across config entries)
+PANEL_SHOW_SIDEBAR = "show_panel"
+PANEL_ADMIN_ONLY = "panel_admin_only"
+
+DEFAULT_SNAPSHOT_INTERVAL: Final[float] = 5.0
 
 
 class CircuitRelayState(enum.Enum):
@@ -122,10 +110,10 @@ class CircuitRelayState(enum.Enum):
 class CircuitPriority(enum.Enum):
     """Enumeration representing the possible circuit priority levels."""
 
-    MUST_HAVE = "Must Have"
-    NICE_TO_HAVE = "Nice To Have"
-    NON_ESSENTIAL = "Non-Essential"
-    UNKNOWN = "Unknown"
+    NEVER = "never"
+    SOC_THRESHOLD = "soc_threshold"
+    OFF_GRID = "off_grid"
+    UNKNOWN = "unknown"
 
 
 class EntityNamingPattern(enum.Enum):

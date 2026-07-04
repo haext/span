@@ -1,11 +1,285 @@
-export_synthetic_config:
-  name: Export Synthetic Sensor Config
-  description: Export the current synthetic sensor configuration to a YAML file. You can specify either a directory (file will be named automatically) or a full file path.
+export_circuit_manifest:
+
+set_circuit_threshold:
   fields:
-    directory:
-      name: File Path
-      description: Either a directory path (file will be named automatically) or a full file path ending in .yaml where the configuration will be saved.
+    circuit_id:
       required: true
-      example: "/config/span_panel_sensor_config.yaml"
+      selector:
+        entity:
+          domain: sensor
+          integration: span_panel
+          device_class: current
+    continuous_threshold_pct:
+      selector:
+        number:
+          min: 1
+          max: 200
+          unit_of_measurement: "%"
+    spike_threshold_pct:
+      selector:
+        number:
+          min: 1
+          max: 200
+          unit_of_measurement: "%"
+    window_duration_m:
+      selector:
+        number:
+          min: 1
+          max: 180
+          unit_of_measurement: min
+    cooldown_duration_m:
+      selector:
+        number:
+          min: 1
+          max: 180
+          unit_of_measurement: min
+    monitoring_enabled:
+      selector:
+        boolean:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: span_panel
+
+clear_circuit_threshold:
+  fields:
+    circuit_id:
+      required: true
+      selector:
+        entity:
+          domain: sensor
+          integration: span_panel
+          device_class: current
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: span_panel
+
+set_mains_threshold:
+  fields:
+    leg:
+      required: true
+      selector:
+        entity:
+          domain: sensor
+          integration: span_panel
+          device_class: current
+    continuous_threshold_pct:
+      selector:
+        number:
+          min: 1
+          max: 200
+          unit_of_measurement: "%"
+    spike_threshold_pct:
+      selector:
+        number:
+          min: 1
+          max: 200
+          unit_of_measurement: "%"
+    window_duration_m:
+      selector:
+        number:
+          min: 1
+          max: 180
+          unit_of_measurement: min
+    cooldown_duration_m:
+      selector:
+        number:
+          min: 1
+          max: 180
+          unit_of_measurement: min
+    monitoring_enabled:
+      selector:
+        boolean:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: span_panel
+
+clear_mains_threshold:
+  fields:
+    leg:
+      required: true
+      selector:
+        entity:
+          domain: sensor
+          integration: span_panel
+          device_class: current
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: span_panel
+
+get_monitoring_status:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: span_panel
+
+set_global_monitoring:
+  fields:
+    enabled:
+      selector:
+        boolean:
+    continuous_threshold_pct:
+      selector:
+        number:
+          min: 1
+          max: 200
+          unit_of_measurement: "%"
+    spike_threshold_pct:
+      selector:
+        number:
+          min: 1
+          max: 200
+          unit_of_measurement: "%"
+    window_duration_m:
+      selector:
+        number:
+          min: 1
+          max: 180
+          unit_of_measurement: min
+    cooldown_duration_m:
+      selector:
+        number:
+          min: 1
+          max: 180
+          unit_of_measurement: min
+    notify_targets:
       selector:
         text:
+    notification_title_template:
+      selector:
+        text:
+    notification_message_template:
+      selector:
+        text:
+    notification_priority:
+      selector:
+        select:
+          options:
+            - "default"
+            - "passive"
+            - "active"
+            - "time-sensitive"
+            - "critical"
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: span_panel
+
+test_notification:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: span_panel
+
+set_graph_time_horizon:
+  fields:
+    horizon:
+      required: true
+      selector:
+        select:
+          options:
+            - "5m"
+            - "1h"
+            - "1d"
+            - "1w"
+            - "1M"
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: span_panel
+
+set_circuit_graph_horizon:
+  fields:
+    circuit_id:
+      required: true
+      selector:
+        text:
+    horizon:
+      required: true
+      selector:
+        select:
+          options:
+            - "5m"
+            - "1h"
+            - "1d"
+            - "1w"
+            - "1M"
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: span_panel
+
+clear_circuit_graph_horizon:
+  fields:
+    circuit_id:
+      required: true
+      selector:
+        text:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: span_panel
+
+set_subdevice_graph_horizon:
+  fields:
+    subdevice_id:
+      required: true
+      selector:
+        text:
+    horizon:
+      required: true
+      selector:
+        select:
+          options:
+            - "5m"
+            - "1h"
+            - "1d"
+            - "1w"
+            - "1M"
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: span_panel
+
+clear_subdevice_graph_horizon:
+  fields:
+    subdevice_id:
+      required: true
+      selector:
+        text:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: span_panel
+
+get_graph_settings:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: span_panel
+
+get_favorites:
+
+add_favorite:
+  fields:
+    entity_id:
+      required: true
+      selector:
+        entity:
+          domain: sensor
+          integration: span_panel
+
+remove_favorite:
+  fields:
+    entity_id:
+      required: true
+      selector:
+        entity:
+          domain: sensor
+          integration: span_panel
