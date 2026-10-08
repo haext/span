@@ -11,13 +11,14 @@ from custom_components.span_panel import (
     _async_register_services,
 )
 from custom_components.span_panel.const import DOMAIN
+from custom_components.span_panel.curation import CurationOverlay
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import entity_registry as er
 
-from .factories import SpanCircuitSnapshotFactory, SpanPanelSnapshotFactory
+from .factories import SpanCircuitSnapshotFactory, SpanPanelSnapshotFactory, pv_binding_for
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -90,7 +91,11 @@ class TestExportCircuitManifest:
         entry.add_to_hass(hass)
         entry.mock_state(hass, ConfigEntryState.LOADED)
         entry.runtime_data = SpanPanelRuntimeData(
-            coordinator=_make_coordinator(snapshot)
+            coordinator=_make_coordinator(snapshot),
+            panel_device_id="panel-device-id",
+            curation=CurationOverlay.empty(),
+            pv_binding=pv_binding_for(snapshot),
+            setup_snapshot=snapshot,
         )
 
         _register_power_entity(
@@ -166,10 +171,18 @@ class TestExportCircuitManifest:
         entry_a.mock_state(hass, ConfigEntryState.LOADED)
         entry_b.mock_state(hass, ConfigEntryState.LOADED)
         entry_a.runtime_data = SpanPanelRuntimeData(
-            coordinator=_make_coordinator(snapshot_a)
+            coordinator=_make_coordinator(snapshot_a),
+            panel_device_id="panel-device-id",
+            curation=CurationOverlay.empty(),
+            pv_binding=pv_binding_for(snapshot_a),
+            setup_snapshot=snapshot_a,
         )
         entry_b.runtime_data = SpanPanelRuntimeData(
-            coordinator=_make_coordinator(snapshot_b)
+            coordinator=_make_coordinator(snapshot_b),
+            panel_device_id="panel-device-id",
+            curation=CurationOverlay.empty(),
+            pv_binding=pv_binding_for(snapshot_b),
+            setup_snapshot=snapshot_b,
         )
 
         _register_power_entity(
@@ -211,7 +224,11 @@ class TestExportCircuitManifest:
         entry.add_to_hass(hass)
         entry.mock_state(hass, ConfigEntryState.LOADED)
         entry.runtime_data = SpanPanelRuntimeData(
-            coordinator=_make_coordinator(snapshot)
+            coordinator=_make_coordinator(snapshot),
+            panel_device_id="panel-device-id",
+            curation=CurationOverlay.empty(),
+            pv_binding=pv_binding_for(snapshot),
+            setup_snapshot=snapshot,
         )
 
         _register_power_entity(
@@ -254,7 +271,11 @@ class TestExportCircuitManifest:
         entry.add_to_hass(hass)
         entry.mock_state(hass, ConfigEntryState.LOADED)
         entry.runtime_data = SpanPanelRuntimeData(
-            coordinator=_make_coordinator(snapshot)
+            coordinator=_make_coordinator(snapshot),
+            panel_device_id="panel-device-id",
+            curation=CurationOverlay.empty(),
+            pv_binding=pv_binding_for(snapshot),
+            setup_snapshot=snapshot,
         )
 
         # Only register entity for one circuit
@@ -315,7 +336,11 @@ class TestExportCircuitManifest:
         entry.add_to_hass(hass)
         entry.mock_state(hass, ConfigEntryState.LOADED)
         entry.runtime_data = SpanPanelRuntimeData(
-            coordinator=_make_coordinator(snapshot)
+            coordinator=_make_coordinator(snapshot),
+            panel_device_id="panel-device-id",
+            curation=CurationOverlay.empty(),
+            pv_binding=pv_binding_for(snapshot),
+            setup_snapshot=snapshot,
         )
 
         _register_power_entity(
@@ -361,7 +386,11 @@ class TestExportCircuitManifest:
         entry.add_to_hass(hass)
         entry.mock_state(hass, ConfigEntryState.LOADED)
         entry.runtime_data = SpanPanelRuntimeData(
-            coordinator=_make_coordinator(snapshot)
+            coordinator=_make_coordinator(snapshot),
+            panel_device_id="panel-device-id",
+            curation=CurationOverlay.empty(),
+            pv_binding=pv_binding_for(snapshot),
+            setup_snapshot=snapshot,
         )
 
         _register_power_entity(
@@ -395,7 +424,11 @@ class TestExportCircuitManifest:
         entry.add_to_hass(hass)
         entry.mock_state(hass, ConfigEntryState.LOADED)
         entry.runtime_data = SpanPanelRuntimeData(
-            coordinator=_make_coordinator(snapshot)
+            coordinator=_make_coordinator(snapshot),
+            panel_device_id="panel-device-id",
+            curation=CurationOverlay.empty(),
+            pv_binding=pv_binding_for(snapshot),
+            setup_snapshot=snapshot,
         )
         # No entities registered
 
@@ -426,7 +459,11 @@ class TestExportCircuitManifest:
         entry.add_to_hass(hass)
         entry.mock_state(hass, ConfigEntryState.LOADED)
         entry.runtime_data = SpanPanelRuntimeData(
-            coordinator=_make_coordinator(snapshot)
+            coordinator=_make_coordinator(snapshot),
+            panel_device_id="panel-device-id",
+            curation=CurationOverlay.empty(),
+            pv_binding=pv_binding_for(snapshot),
+            setup_snapshot=snapshot,
         )
 
         _register_power_entity(
@@ -458,7 +495,11 @@ class TestExportCircuitManifest:
         entry.add_to_hass(hass)
         entry.mock_state(hass, ConfigEntryState.LOADED)
         entry.runtime_data = SpanPanelRuntimeData(
-            coordinator=_make_coordinator(snapshot)
+            coordinator=_make_coordinator(snapshot),
+            panel_device_id="panel-device-id",
+            curation=CurationOverlay.empty(),
+            pv_binding=pv_binding_for(snapshot),
+            setup_snapshot=snapshot,
         )
 
         _register_power_entity(

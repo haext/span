@@ -10,6 +10,7 @@ from span_panel_api import (
     SpanBatterySnapshot,
     SpanCircuitSnapshot,
     SpanEvseSnapshot,
+    SpanMidSnapshot,
     SpanPanelSnapshot,
     SpanPVSnapshot,
 )
@@ -23,6 +24,7 @@ from custom_components.span_panel.const import (
     CircuitPriority,
     CircuitRelayState,
 )
+from custom_components.span_panel.pv_binding import PvBinding, resolve
 
 
 class SpanCircuitSnapshotFactory:
@@ -33,9 +35,9 @@ class SpanCircuitSnapshotFactory:
         circuit_id: str = "1",
         name: str = "Test Circuit",
         relay_state: str = CircuitRelayState.CLOSED.name,
-        instant_power_w: float = 150.5,
-        consumed_energy_wh: float = 1500.0,
-        produced_energy_wh: float = 0.0,
+        instant_power_w: float | None = 150.5,
+        consumed_energy_wh: float | None = 1500.0,
+        produced_energy_wh: float | None = 0.0,
         tabs: list[int] | None = None,
         priority: str = CircuitPriority.SOC_THRESHOLD.name,
         is_user_controllable: bool = True,
@@ -140,7 +142,7 @@ class SpanEvseSnapshotFactory:
         lock_state: str = "LOCKED",
         advertised_current_a: float | None = 32.0,
         vendor_name: str | None = "SPAN",
-        product_name: str | None = "SPAN Drive",
+        model: str | None = "SPAN Drive",
         part_number: str | None = None,
         serial_number: str | None = "SN-EVSE-001",
         software_version: str | None = "2.1.0",
@@ -153,7 +155,7 @@ class SpanEvseSnapshotFactory:
             lock_state=lock_state,
             advertised_current_a=advertised_current_a,
             vendor_name=vendor_name,
-            product_name=product_name,
+            model=model,
             part_number=part_number,
             serial_number=serial_number,
             software_version=software_version,
@@ -176,22 +178,26 @@ class SpanBatterySnapshotFactory:
         soe_percentage: float | None = 85.0,
         soe_kwh: float | None = None,
         vendor_name: str | None = None,
-        product_name: str | None = None,
+        model: str | None = None,
+        part_number: str | None = None,
         serial_number: str | None = None,
         software_version: str | None = None,
         nameplate_capacity_kwh: float | None = None,
         connected: bool | None = None,
+        communication_state: str | None = None,
     ) -> SpanBatterySnapshot:
         """Create a SpanBatterySnapshot with reasonable defaults."""
         return SpanBatterySnapshot(
             soe_percentage=soe_percentage,
             soe_kwh=soe_kwh,
             vendor_name=vendor_name,
-            product_name=product_name,
+            model=model,
+            part_number=part_number,
             serial_number=serial_number,
             software_version=software_version,
             nameplate_capacity_kwh=nameplate_capacity_kwh,
             connected=connected,
+            communication_state=communication_state,
         )
 
 
@@ -203,12 +209,12 @@ class SpanPanelSnapshotFactory:
         serial_number: str = "sp3-242424-001",
         firmware_version: str = "1.2.3",
         main_relay_state: str = "CLOSED",
-        instant_grid_power_w: float = 2500.75,
-        feedthrough_power_w: float = 0.0,
-        main_meter_energy_consumed_wh: float = 2500.0,
-        main_meter_energy_produced_wh: float = 0.0,
-        feedthrough_energy_consumed_wh: float = 0.0,
-        feedthrough_energy_produced_wh: float = 0.0,
+        instant_grid_power_w: float | None = 2500.75,
+        feedthrough_power_w: float | None = 0.0,
+        main_meter_energy_consumed_wh: float | None = 2500.0,
+        main_meter_energy_produced_wh: float | None = 0.0,
+        feedthrough_energy_consumed_wh: float | None = 0.0,
+        feedthrough_energy_produced_wh: float | None = 0.0,
         dsm_state: str = DSM_ON_GRID,
         current_run_config: str = PANEL_ON_GRID,
         door_state: str = SYSTEM_DOOR_STATE_CLOSED,
@@ -219,6 +225,8 @@ class SpanPanelSnapshotFactory:
         wwan_link: bool = False,
         circuits: dict[str, SpanCircuitSnapshot] | None = None,
         battery: SpanBatterySnapshot | None = None,
+        # v1.0 only. Defaults to None so every existing fixture stays a flat panel.
+        mid: SpanMidSnapshot | None = None,
         dominant_power_source: str | None = None,
         grid_state: str | None = None,
         grid_islandable: bool | None = None,
@@ -238,6 +246,11 @@ class SpanPanelSnapshotFactory:
         downstream_l2_current_a: float | None = None,
         pv: SpanPVSnapshot | None = None,
         evse: dict[str, SpanEvseSnapshot] | None = None,
+        # Defaults True for the same reason the library field does: a panel at the
+        # service entrance is the ordinary case, and flat firmware cannot be
+        # anything else. A fixture opts out to model a chained panel or one behind
+        # an upstream DER.
+        lugs_at_service_entrance: bool = True,
     ) -> SpanPanelSnapshot:
         """Create a SpanPanelSnapshot with reasonable defaults."""
         if circuits is None:
@@ -268,6 +281,7 @@ class SpanPanelSnapshotFactory:
             wwan_link=wwan_link,
             circuits=circuits,
             battery=battery,
+            mid=mid,
             dominant_power_source=dominant_power_source,
             grid_state=grid_state,
             grid_islandable=grid_islandable,
@@ -281,6 +295,7 @@ class SpanPanelSnapshotFactory:
             panel_size=panel_size,
             power_flow_pv=power_flow_pv,
             power_flow_grid=power_flow_grid,
+            lugs_at_service_entrance=lugs_at_service_entrance,
             upstream_l1_current_a=upstream_l1_current_a,
             upstream_l2_current_a=upstream_l2_current_a,
             downstream_l1_current_a=downstream_l1_current_a,
@@ -345,3 +360,8 @@ class SpanPanelSnapshotFactory:
             serial_number=serial_number,
             circuits=[SpanCircuitSnapshotFactory.create_kitchen_outlet()],
         )
+
+
+def pv_binding_for(snapshot: SpanPanelSnapshot) -> PvBinding:
+    """The identity a first setup over `snapshot` resolves, for harnesses that build runtime data by hand."""
+    return resolve(snapshot, None, frozenset(), link_held=False, inverter_links_held=frozenset())[0]

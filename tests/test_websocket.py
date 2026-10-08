@@ -2,41 +2,41 @@
 
 from __future__ import annotations
 
-import inspect
+from dataclasses import replace
 from unittest.mock import MagicMock
 
 import pytest
 
 from custom_components.span_panel import SpanPanelRuntimeData
 from custom_components.span_panel.const import DOMAIN
+from custom_components.span_panel.control_gate import ControlMode, ControlPolicy
+from custom_components.span_panel.curation import CurationOverlay
 from custom_components.span_panel.websocket import (
     _build_circuit_entity_map,
     _classify_sensor_role,
     _classify_sub_device,
-    _find_config_entry_id,
+    _offered_roles,
     async_register_commands,
     handle_panel_topology,
 )
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
+from span_panel_api import SpanCircuitSnapshot
 
 from .factories import (
     SpanBatterySnapshotFactory,
     SpanCircuitSnapshotFactory,
     SpanEvseSnapshotFactory,
     SpanPanelSnapshotFactory,
+    pv_binding_for,
 )
+from .helpers import unwrap_websocket_command
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry, MockUser
 from pytest_homeassistant_custom_component.typing import WebSocketGenerator
 
-# The command stack includes wrappers such as @async_response and
-# @require_admin. Unwrap until we reach the original async handler so the
-# direct-call tests can await it.
-_handle_panel_topology_inner = handle_panel_topology
-while not inspect.iscoroutinefunction(_handle_panel_topology_inner):
-    _handle_panel_topology_inner = _handle_panel_topology_inner.__wrapped__
+_handle_panel_topology_inner = unwrap_websocket_command(handle_panel_topology)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -184,36 +184,17 @@ class TestClassifySubDevice:
         device.identifiers = {(DOMAIN, "sp3-242424-001_evse_0")}
         assert _classify_sub_device(device) == "evse"
 
+    def test_pv(self):
+        """Classify the solar inverter sub-device from its identifier."""
+        device = MagicMock()
+        device.identifiers = {(DOMAIN, "sp3-242424-001_pv")}
+        assert _classify_sub_device(device) == "pv"
+
     def test_unknown(self):
         """Treat the panel device itself as an unknown sub-device type."""
         device = MagicMock()
         device.identifiers = {(DOMAIN, "sp3-242424-001")}
         assert _classify_sub_device(device) == "unknown"
-
-
-class TestFindConfigEntryId:
-    """Tests for _find_config_entry_id."""
-
-    def test_finds_span_entry(self):
-        """Return the config entry id for SPAN panel devices."""
-        device = MagicMock()
-        device.identifiers = {(DOMAIN, "sp3-242424-001")}
-        device.config_entries = {"entry_123"}
-        assert _find_config_entry_id(device) == "entry_123"
-
-    def test_non_span_device(self):
-        """Ignore devices that do not belong to the SPAN domain."""
-        device = MagicMock()
-        device.identifiers = {("other_domain", "some_id")}
-        device.config_entries = {"entry_123"}
-        assert _find_config_entry_id(device) is None
-
-    def test_no_config_entries(self):
-        """Return None when a SPAN device has no linked config entries."""
-        device = MagicMock()
-        device.identifiers = {(DOMAIN, "sp3-242424-001")}
-        device.config_entries = set()
-        assert _find_config_entry_id(device) is None
 
 
 class TestBuildCircuitEntityMap:
@@ -381,8 +362,33 @@ class TestHandlePanelTopology:
         )
 
     @pytest.mark.asyncio
+    async def test_a_span_identifier_another_entry_owns(self, hass: HomeAssistant):
+        """Refused as `not_span_panel`, exactly as the adopted commands refuse it.
+
+        A device belongs to the one entry that owns it, and that entry's domain is
+        what makes it a SPAN panel or not -- an identifier in SPAN's domain on a
+        device another entry owns does not. Both commands resolve the panel through
+        one function, so they refuse it with one code.
+        """
+        other = MockConfigEntry(domain="other_domain", data={}, entry_id="other_entry")
+        other.add_to_hass(hass)
+        device = dr.async_get(hass).async_get_or_create(
+            config_entry_id="other_entry",
+            identifiers={(DOMAIN, "sp3-242424-001")},
+        )
+
+        connection = _make_mock_connection()
+        msg = {"id": 1, "type": "span_panel/panel_topology", "device_id": device.id}
+
+        await _handle_panel_topology_inner(hass, connection, msg)
+
+        connection.send_error.assert_called_once_with(
+            1, "not_span_panel", "Device is not a SPAN Panel device"
+        )
+
+    @pytest.mark.asyncio
     async def test_sub_device_id_rejected(self, hass: HomeAssistant):
-        """Error when device_id is a BESS/EVSE sub-device, not the panel."""
+        """Error when device_id is a sub-device, not the panel."""
         entry = MockConfigEntry(
             domain=DOMAIN,
             data={},
@@ -391,8 +397,13 @@ class TestHandlePanelTopology:
         )
         entry.add_to_hass(hass)
         entry.mock_state(hass, ConfigEntryState.LOADED)
+        snapshot = SpanPanelSnapshotFactory.create()
         entry.runtime_data = SpanPanelRuntimeData(
-            coordinator=_make_coordinator(SpanPanelSnapshotFactory.create())
+            coordinator=_make_coordinator(snapshot),
+            panel_device_id="panel-device-id",
+            curation=CurationOverlay.empty(),
+            pv_binding=pv_binding_for(snapshot),
+            setup_snapshot=snapshot,
         )
 
         panel_device = _register_panel_device(
@@ -418,7 +429,7 @@ class TestHandlePanelTopology:
         connection.send_error.assert_called_once_with(
             1,
             "not_panel_device",
-            "Use the SPAN panel device registry ID, not a BESS or EVSE sub-device.",
+            "Use the SPAN panel device registry ID, not a sub-device.",
         )
 
     @pytest.mark.asyncio
@@ -479,7 +490,11 @@ class TestHandlePanelTopology:
         entry.add_to_hass(hass)
         entry.mock_state(hass, ConfigEntryState.LOADED)
         entry.runtime_data = SpanPanelRuntimeData(
-            coordinator=_make_coordinator(snapshot)
+            coordinator=_make_coordinator(snapshot),
+            panel_device_id="panel-device-id",
+            curation=CurationOverlay.empty(),
+            pv_binding=pv_binding_for(snapshot),
+            setup_snapshot=snapshot,
         )
 
         device = _register_panel_device(hass, "span_entry", serial="sp3-test-001")
@@ -509,6 +524,10 @@ class TestHandlePanelTopology:
         assert result["firmware"] == "spanos2/r202603/05"
         assert result["panel_size"] == 32
         assert result["device_name"] == "SPAN Panel"
+        # The panel's current device and its entry, which a consumer reads from
+        # here rather than looking the id it holds up in the device list.
+        assert result["panel_device_id"] == device.id
+        assert result["config_entry_id"] == "span_entry"
 
         # Kitchen circuit (240V).
         kitchen_data = result["circuits"]["uuid_kitchen"]
@@ -542,7 +561,11 @@ class TestHandlePanelTopology:
         entry.add_to_hass(hass)
         entry.mock_state(hass, ConfigEntryState.LOADED)
         entry.runtime_data = SpanPanelRuntimeData(
-            coordinator=_make_coordinator(snapshot)
+            coordinator=_make_coordinator(snapshot),
+            panel_device_id="panel-device-id",
+            curation=CurationOverlay.empty(),
+            pv_binding=pv_binding_for(snapshot),
+            setup_snapshot=snapshot,
         )
 
         device = _register_panel_device(hass, "span_entry")
@@ -571,7 +594,11 @@ class TestHandlePanelTopology:
         entry.add_to_hass(hass)
         entry.mock_state(hass, ConfigEntryState.LOADED)
         entry.runtime_data = SpanPanelRuntimeData(
-            coordinator=_make_coordinator(snapshot)
+            coordinator=_make_coordinator(snapshot),
+            panel_device_id="panel-device-id",
+            curation=CurationOverlay.empty(),
+            pv_binding=pv_binding_for(snapshot),
+            setup_snapshot=snapshot,
         )
 
         panel_device = _register_panel_device(hass, "span_entry", serial="sp3-sub-001")
@@ -649,7 +676,11 @@ class TestHandlePanelTopology:
         entry.add_to_hass(hass)
         entry.mock_state(hass, ConfigEntryState.LOADED)
         entry.runtime_data = SpanPanelRuntimeData(
-            coordinator=_make_coordinator(snapshot)
+            coordinator=_make_coordinator(snapshot),
+            panel_device_id="panel-device-id",
+            curation=CurationOverlay.empty(),
+            pv_binding=pv_binding_for(snapshot),
+            setup_snapshot=snapshot,
         )
 
         panel_device = _register_panel_device(hass, "span_entry", serial="sp3-evse-001")
@@ -722,7 +753,11 @@ class TestHandlePanelTopology:
         entry.add_to_hass(hass)
         entry.mock_state(hass, ConfigEntryState.LOADED)
         entry.runtime_data = SpanPanelRuntimeData(
-            coordinator=_make_coordinator(snapshot)
+            coordinator=_make_coordinator(snapshot),
+            panel_device_id="panel-device-id",
+            curation=CurationOverlay.empty(),
+            pv_binding=pv_binding_for(snapshot),
+            setup_snapshot=snapshot,
         )
 
         device = _register_panel_device(hass, "span_entry", serial="sp3-prio-001")
@@ -745,6 +780,135 @@ class TestHandlePanelTopology:
         assert hvac_data["priority"] == "SOC_THRESHOLD"
 
     @pytest.mark.asyncio
+    async def test_topology_circuit_record_carries_the_documented_keys(self, hass: HomeAssistant):
+        """The circuit record's key set is a contract, so pin it.
+
+        A consumer rendering from this payload -- the card -- decides what to
+        show from these keys, and it lives in another repository that no test
+        here can reach. Adding or removing a key silently changes what it
+        renders, so the set is asserted exactly rather than by presence: a
+        deliberate change updates this list, an accidental one fails.
+        """
+        circuit = SpanCircuitSnapshotFactory.create(
+            circuit_id="uuid_kitchen",
+            name="Kitchen",
+            tabs=[3],
+        )
+        snapshot = SpanPanelSnapshotFactory.create(
+            serial_number="sp3-contract-001",
+            circuits={"uuid_kitchen": circuit},
+        )
+
+        entry = MockConfigEntry(
+            domain=DOMAIN,
+            data={},
+            entry_id="span_entry",
+            unique_id="sp3-contract-001",
+        )
+        entry.add_to_hass(hass)
+        entry.mock_state(hass, ConfigEntryState.LOADED)
+        entry.runtime_data = SpanPanelRuntimeData(
+            coordinator=_make_coordinator(snapshot),
+            panel_device_id="panel-device-id",
+            curation=CurationOverlay.empty(),
+            pv_binding=pv_binding_for(snapshot),
+            setup_snapshot=snapshot,
+        )
+
+        device = _register_panel_device(hass, "span_entry", serial="sp3-contract-001")
+
+        connection = _make_mock_connection()
+        msg = {"id": 1, "type": "span_panel/panel_topology", "device_id": device.id}
+
+        await _handle_panel_topology_inner(hass, connection, msg)
+
+        result = connection.send_result.call_args[0][1]
+
+        assert set(result["circuits"]["uuid_kitchen"]) == {
+            "tabs",
+            "name",
+            "voltage",
+            "device_type",
+            "relay_state",
+            "relay_state_target",
+            "is_user_controllable",
+            "breaker_rating_a",
+            "always_on",
+            "priority",
+            "priority_target",
+            "is_never_backup",
+            "entities",
+        }
+
+    @pytest.mark.asyncio
+    async def test_topology_reports_priority_settability_apart_from_the_relay(
+        self, hass: HomeAssistant
+    ):
+        """`is_never_backup` is carried, and is independent of the relay flag.
+
+        The two are separate commissioning flags: a never-backup circuit has a
+        working relay and a priority the panel pins, and a relay-locked circuit
+        may have a priority it will happily accept. No entity is created for a
+        circuit whose priority is pinned, so this record is the only thing that
+        can tell a consumer the difference between a pinned priority and an
+        absent one.
+        """
+        pinned_priority = SpanCircuitSnapshotFactory.create(
+            circuit_id="uuid_pinned",
+            name="Well Pump",
+            tabs=[11],
+            is_user_controllable=True,
+            is_never_backup=True,
+            priority="OFF_GRID",
+        )
+        locked_relay = SpanCircuitSnapshotFactory.create(
+            circuit_id="uuid_locked",
+            name="Networking",
+            tabs=[13],
+            is_user_controllable=False,
+            is_never_backup=False,
+            priority="NEVER",
+        )
+        snapshot = SpanPanelSnapshotFactory.create(
+            serial_number="sp3-backup-001",
+            circuits={"uuid_pinned": pinned_priority, "uuid_locked": locked_relay},
+        )
+
+        entry = MockConfigEntry(
+            domain=DOMAIN,
+            data={},
+            entry_id="span_entry",
+            unique_id="sp3-backup-001",
+        )
+        entry.add_to_hass(hass)
+        entry.mock_state(hass, ConfigEntryState.LOADED)
+        entry.runtime_data = SpanPanelRuntimeData(
+            coordinator=_make_coordinator(snapshot),
+            panel_device_id="panel-device-id",
+            curation=CurationOverlay.empty(),
+            pv_binding=pv_binding_for(snapshot),
+            setup_snapshot=snapshot,
+        )
+
+        device = _register_panel_device(hass, "span_entry", serial="sp3-backup-001")
+
+        connection = _make_mock_connection()
+        msg = {"id": 1, "type": "span_panel/panel_topology", "device_id": device.id}
+
+        await _handle_panel_topology_inner(hass, connection, msg)
+
+        circuits = connection.send_result.call_args[0][1]["circuits"]
+
+        pinned = circuits["uuid_pinned"]
+        assert pinned["is_never_backup"] is True
+        assert pinned["is_user_controllable"] is True
+        assert pinned["priority"] == "OFF_GRID"
+
+        locked = circuits["uuid_locked"]
+        assert locked["is_never_backup"] is False
+        assert locked["is_user_controllable"] is False
+
+    @pytest.mark.asyncio
     async def test_topology_includes_panel_status_entity(self, hass: HomeAssistant):
         """panel_status binary sensor entity_id is included in the topology panel_entities map."""
         snapshot = SpanPanelSnapshotFactory.create(serial_number="sp3-242424-001")
@@ -758,7 +922,11 @@ class TestHandlePanelTopology:
         entry.add_to_hass(hass)
         entry.mock_state(hass, ConfigEntryState.LOADED)
         entry.runtime_data = SpanPanelRuntimeData(
-            coordinator=_make_coordinator(snapshot)
+            coordinator=_make_coordinator(snapshot),
+            panel_device_id="panel-device-id",
+            curation=CurationOverlay.empty(),
+            pv_binding=pv_binding_for(snapshot),
+            setup_snapshot=snapshot,
         )
 
         panel_device = _register_panel_device(hass, "span_entry", serial="sp3-242424-001")
@@ -797,7 +965,11 @@ class TestHandlePanelTopology:
         entry.add_to_hass(hass)
         entry.mock_state(hass, ConfigEntryState.LOADED)
         entry.runtime_data = SpanPanelRuntimeData(
-            coordinator=_make_coordinator(snapshot)
+            coordinator=_make_coordinator(snapshot),
+            panel_device_id="panel-device-id",
+            curation=CurationOverlay.empty(),
+            pv_binding=pv_binding_for(snapshot),
+            setup_snapshot=snapshot,
         )
 
         panel_device = _register_panel_device(hass, "span_entry", serial="sp3-242424-001")
@@ -819,3 +991,100 @@ class TestHandlePanelTopology:
     async def test_registration(self, hass: HomeAssistant):
         """WebSocket commands can be registered without error."""
         async_register_commands(hass)
+
+
+# ---------------------------------------------------------------------------
+# Controls are offered only while the integration provides them (spec §4.3)
+# ---------------------------------------------------------------------------
+
+ROLES = {"power": "sensor.kitchen_power", "switch": "switch.kitchen_breaker", "select": "select.kitchen_priority"}
+
+
+class TestOfferedControls:
+    """`switch` and `select` appear only while the circuit qualifies and the mode is not Nobody."""
+
+    @pytest.mark.parametrize("mode", list(ControlMode))
+    @pytest.mark.parametrize(
+        ("circuit_kwargs", "switch", "select"),
+        [
+            ({"is_user_controllable": True}, True, True),
+            ({"is_user_controllable": True, "is_never_backup": True}, True, False),
+            ({"is_user_controllable": False, "is_never_backup": True, "priority": "NEVER"}, False, False),
+            ({"is_user_controllable": True, "device_type": "pv"}, False, False),
+        ],
+        ids=["controllable", "never-backup", "locked", "pv"],
+    )
+    def test_offered_roles(self, mode: ControlMode, circuit_kwargs: dict[str, object], switch: bool, select: bool) -> None:
+        circuit = SpanCircuitSnapshotFactory.create(**circuit_kwargs)
+
+        offered = _offered_roles(ROLES, circuit, mode)
+
+        expected = {"power": ROLES["power"]}
+        if mode is not ControlMode.DISABLED and switch:
+            expected["switch"] = ROLES["switch"]
+        if mode is not ControlMode.DISABLED and select:
+            expected["select"] = ROLES["select"]
+        assert offered == expected
+
+    async def _circuit_entities(
+        self,
+        hass: HomeAssistant,
+        *,
+        setup: SpanCircuitSnapshot,
+        live: SpanCircuitSnapshot,
+        mode: ControlMode = ControlMode.ALL_USERS,
+    ) -> dict[str, object]:
+        """The topology's record for one circuit with a registered power sensor, switch and select."""
+        serial = "sp3-offered-001"
+        setup_snapshot = SpanPanelSnapshotFactory.create(serial_number=serial, circuits={"uuid_kitchen": setup})
+        live_snapshot = SpanPanelSnapshotFactory.create(serial_number=serial, circuits={"uuid_kitchen": live})
+        entry = MockConfigEntry(domain=DOMAIN, data={}, entry_id="span_entry", unique_id=serial)
+        entry.add_to_hass(hass)
+        entry.mock_state(hass, ConfigEntryState.LOADED)
+        entry.runtime_data = SpanPanelRuntimeData(
+            coordinator=_make_coordinator(live_snapshot),
+            panel_device_id="panel-device-id",
+            curation=CurationOverlay.empty(),
+            pv_binding=pv_binding_for(setup_snapshot),
+            setup_snapshot=setup_snapshot,
+            control_policy=replace(ControlPolicy.default(), mode=mode),
+        )
+        device = _register_panel_device(hass, "span_entry", serial=serial)
+        for domain, unique_id, entity_id in (
+            ("sensor", f"span_{serial}_uuid_kitchen_power", "sensor.kitchen_power"),
+            ("switch", f"span_{serial}_relay_uuid_kitchen", "switch.kitchen_breaker"),
+            ("select", f"span_{serial}_select_uuid_kitchen", "select.kitchen_priority"),
+        ):
+            _register_entity(hass, "span_entry", device.id, domain, unique_id, entity_id)
+        connection = _make_mock_connection()
+        await _handle_panel_topology_inner(
+            hass, connection, {"id": 1, "type": "span_panel/panel_topology", "device_id": device.id}
+        )
+        connection.send_error.assert_not_called()
+        record = connection.send_result.call_args[0][1]["circuits"]["uuid_kitchen"]
+        assert isinstance(record, dict)
+        return record
+
+    async def test_a_qualifying_circuit_keeps_both_roles(self, hass: HomeAssistant) -> None:
+        kitchen = SpanCircuitSnapshotFactory.create(circuit_id="uuid_kitchen", name="Kitchen")
+        record = await self._circuit_entities(hass, setup=kitchen, live=kitchen)
+        assert set(record["entities"]) == {"power", "switch", "select"}
+
+    async def test_an_orphans_roles_are_absent(self, hass: HomeAssistant) -> None:
+        locked = SpanCircuitSnapshotFactory.create(
+            circuit_id="uuid_kitchen", name="Kitchen", is_user_controllable=False, is_never_backup=True, priority="NEVER"
+        )
+        record = await self._circuit_entities(hass, setup=locked, live=locked)
+        assert set(record["entities"]) == {"power"}
+
+    async def test_the_live_snapshot_withdraws_a_role_before_the_reload(self, hass: HomeAssistant) -> None:
+        kitchen = SpanCircuitSnapshotFactory.create(circuit_id="uuid_kitchen", name="Kitchen")
+        locked = replace(kitchen, is_user_controllable=False, is_never_backup=True, priority="NEVER")
+        record = await self._circuit_entities(hass, setup=kitchen, live=locked)
+        assert set(record["entities"]) == {"power"}
+
+    async def test_nobody_offers_no_control_and_keeps_the_panels_truth(self, hass: HomeAssistant) -> None:
+        kitchen = SpanCircuitSnapshotFactory.create(circuit_id="uuid_kitchen", name="Kitchen")
+        record = await self._circuit_entities(hass, setup=kitchen, live=kitchen, mode=ControlMode.DISABLED)
+        assert set(record["entities"]) == {"power"}
+        assert record["is_user_controllable"] is True

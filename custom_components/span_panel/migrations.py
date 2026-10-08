@@ -8,32 +8,43 @@ from typing import TYPE_CHECKING
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
-from .const import CONF_API_VERSION
+from .const import CONF_API_VERSION, CONF_HOP_PASSPHRASE, PANEL_CA_PENDING
+from .options import ALLOW_CONTEXTLESS_CONTROL
 
 if TYPE_CHECKING:
-    from . import SpanPanelConfigEntry
+    from .runtime import SpanPanelConfigEntry
 
 _LOGGER = logging.getLogger(__name__)
 
 # Must match the storage version produced by the latest supported entry format.
-CURRENT_CONFIG_VERSION = 6
+CURRENT_CONFIG_VERSION = 7
+CURRENT_CONFIG_MINOR_VERSION = 2
 
 
 async def async_migrate_entry(hass: HomeAssistant, config_entry: SpanPanelConfigEntry) -> bool:
     """Migrate config entry through successive versions.
 
     Supports upgrades from v1.3.1+ (config version 2) through to the
-    current version 6. Each step mutates only the fields relevant to
+    current version 7.2. Each step mutates only the fields relevant to
     that version boundary.
+
+    Core also calls this for an entry a newer release has already moved past
+    the current minor version, which is a downgrade it allows; such an entry is
+    left as it is.
     """
-    if config_entry.version >= CURRENT_CONFIG_VERSION:
+    if (config_entry.version, config_entry.minor_version) >= (
+        CURRENT_CONFIG_VERSION,
+        CURRENT_CONFIG_MINOR_VERSION,
+    ):
         return True
 
     _LOGGER.debug(
-        "Migrating config entry %s from version %s to %s",
+        "Migrating config entry %s from version %s.%s to %s.%s",
         config_entry.entry_id,
         config_entry.version,
+        config_entry.minor_version,
         CURRENT_CONFIG_VERSION,
+        CURRENT_CONFIG_MINOR_VERSION,
     )
 
     # --- v2 → v3: add api_version field ---
@@ -123,5 +134,52 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: SpanPanelConfig
             version=6,
         )
         _LOGGER.debug("Migrated config entry %s to version 6", config_entry.entry_id)
+
+    # --- v6 → v7: drop the stored passphrase, and queue the CA acquisition ---
+    if config_entry.version < 7:
+        updated_data = dict(config_entry.data)
+        # The passphrase is a registration input only — nothing at runtime reads
+        # it back. Holding it in `.storage` bought nothing and cost a credential
+        # that re-registers any client against the panel.
+        removed = updated_data.pop(CONF_HOP_PASSPHRASE, None) is not None
+
+        # No I/O here, deliberately. This runs during startup, so a fetch would
+        # delay boot whenever the panel is unreachable and a failure would have
+        # nowhere to recover to. The flag defers it to the first successful
+        # setup and is cleared there; the same shape as solar_migration_pending
+        # above. Only v2 entries: v1 fails setup before it reaches a panel, and
+        # a simulation entry has none to fetch from.
+        if updated_data.get(CONF_API_VERSION) == "v2":
+            updated_data[PANEL_CA_PENDING] = True
+
+        hass.config_entries.async_update_entry(
+            config_entry,
+            data=updated_data,
+            version=7,
+        )
+        if removed:
+            _LOGGER.info(
+                "Removed the stored panel passphrase from config entry %s",
+                config_entry.entry_id,
+            )
+        _LOGGER.debug("Migrated config entry %s to version 7", config_entry.entry_id)
+
+    # --- v7.1 → v7.2: pin control without a logged-in user to what it was ---
+    if config_entry.version == 7 and config_entry.minor_version < 2:
+        updated_options = dict(config_entry.options)
+        # The default for an entry that never stored this became off. Every entry
+        # reaching this step was created before that, when anything but a stored
+        # bool resolved to on, so that is written down here rather than letting
+        # an upgrade start refusing a household's automations. A stored bool is
+        # the user's own choice and is kept.
+        if not isinstance(updated_options.get(ALLOW_CONTEXTLESS_CONTROL), bool):
+            updated_options[ALLOW_CONTEXTLESS_CONTROL] = True
+
+        hass.config_entries.async_update_entry(
+            config_entry,
+            options=updated_options,
+            minor_version=2,
+        )
+        _LOGGER.debug("Migrated config entry %s to version 7.2", config_entry.entry_id)
 
     return True
